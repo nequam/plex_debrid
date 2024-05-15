@@ -156,12 +156,17 @@ def get(url):
         header = None
     return response, header
 
-def post(url, data):
+def post(url, data, auth=False):
     try:
-        response = session.post(url, headers={
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36',
-            'Content-type': "application/json", "trakt-api-key": client_id, "trakt-api-version": "2",
-            "Authorization": "Bearer " + current_user[1]}, data=data)
+        if auth:
+            headers = {
+                'Content-type': "application/json"
+            }
+        else:
+            headers={
+                'Content-type': "application/json", "trakt-api-key": client_id, "trakt-api-version": "2",
+                "Authorization": "Bearer " + current_user[1]}
+        response = session.post(url, headers=headers, data=data)
         logerror(response)
         response = json.loads(response.content, object_hook=lambda d: SimpleNamespace(**d))
         time.sleep(1.1)
@@ -169,19 +174,20 @@ def post(url, data):
         response = None
     return response
 
+
 def oauth(code=""):
     if code == "":
-        response = post('https://api.trakt.tv/oauth/device/code', json.dumps({'client_id': client_id}))
-        if not response == None:
+        response = post(url='https://api.trakt.tv/oauth/device/code', data=json.dumps({'client_id': client_id}), auth=True)
+        if not response is None:
             return response.device_code, response.user_code
         else:
             print("trakt.tv could not be reached right now! Please try again later. The script will most likely exit after this message.")
             time.sleep(5)
     else:
         response = None
-        while response == None:
-            response = post('https://api.trakt.tv/oauth/device/token', json.dumps(
-                {'code': code, 'client_id': client_id, 'client_secret': client_secret}))
+        while response is None:
+            response = post(url='https://api.trakt.tv/oauth/device/token', data=json.dumps(
+                {'code': code, 'client_id': client_id, 'client_secret': client_secret}),auth=True)
             time.sleep(1)
         return response.access_token
 
